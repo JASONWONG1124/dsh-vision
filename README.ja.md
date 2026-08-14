@@ -2,7 +2,24 @@
 
 [中文](README.md) · [English](README.en.md) · **日本語** · [한국어](README.ko.md)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/JASONWONG1124/dsh-vision?style=social)](https://github.com/JASONWONG1124/dsh-vision/stargazers)
+[![Node](https://img.shields.io/badge/node-%3E%3D22-green.svg)](https://nodejs.org)
+
 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) のテキスト専用モデルに視覚を追加します。**画像を貼り付けるだけで認識**でき、CLI は不要 —— 視覚モデルの API キーを1つ入力するだけで、プラグインが HTTP で直接ビジョン API を呼び、画像を構造化エビデンス(OCR全文 + 意味 + レイアウト + 視覚)へ変換してからテキストモデルへ渡します。
+
+## 目次
+
+- [特徴](#特徴)
+- [仕組み](#仕組み)
+- [インストール](#インストール)
+- [設定](#設定)
+- [使い方](#使い方)
+- [モデルが見るもの](#モデルが見るもの)
+- [セキュリティ](#セキュリティ)
+- [トラブルシューティング](#トラブルシューティング)
+- [FAQ](#faq)
+- [License](#license)
 
 ## 特徴
 
@@ -23,9 +40,15 @@ DeepSeek のテキストモデルは画像を扱えないため、貼り付け�
 
 データフロー(視覚エンジンが「目」で、DeepSeek が読むのはテキストのみ):
 
-```
-画像を貼り付け → バイトを読み取り → ビジョン API を呼ぶ(Gemini/OpenAI/Anthropic)
-             → 構造化エビデンス JSON → テキストに変換 → DeepSeek へ転送 → 回答
+```mermaid
+flowchart LR
+    A[画像を貼り付け] --> B[dsh-vision が横取り]
+    B --> C[画像バイトを読み取り]
+    C --> D["ビジョン API<br/>Gemini / OpenAI / Anthropic"]
+    D --> E[構造化エビデンス JSON]
+    E --> F[テキストに変換]
+    F --> G[DeepSeek テキストモデル]
+    G --> H[回答]
 ```
 
 > 画像のピクセルが DeepSeek に届くことはありません。DeepSeek が読むのは視覚エンジンが書いたテキストエビデンスです。
@@ -135,6 +158,34 @@ export VISION_PROVIDER=gemini     # gemini | openai | anthropic
 | 「model … is no longer available」 | モデルが廃止済み。現在使えるモデル(例 `gemini-3.6-flash`)へ変更 |
 | `dsh plugin add` で「pnpm not found」 | pnpm を導入:`npm i -g pnpm` または `corepack enable pnpm` |
 | `declares no dsh.bundle` | 公開直後の短いクールダウン。インストールコマンドをもう一度実行 |
+
+## FAQ
+
+**Q: 画像は第三者にアップロードされますか?**
+
+はい —— 画像を読むとき、設定で選んだビジョンプロバイダ(Gemini / OpenAI 互換 / Anthropic)に送られます。それ以外へ送られることはありません。
+
+**Q: 費用はかかりますか?**
+
+ビジョン API は呼び出しごとに課金されます。Gemini は無料枠あり([Google AI Studio](https://aistudio.google.com) でキー取得)、OpenAI / Anthropic は従量課金です。同じ画像はセッション内でキャッシュされ、何度も課金されることはありません。
+
+**Q: なぜ DeepSeek のテキスト専用モデルは画像を見られないのですか?**
+
+これには2つの層があります:
+
+**1. モデル自体に「目」がない(アーキテクチャ)。** DeepSeek-V4-Pro のようなモデルは**テキスト専用**で、テキストトークンの列を受け取り、テキストを出力します。マルチモーダルモデル(GPT-4o、Gemini、Claude)は**ビジョンエンコーダ**を持ち、画像をまず「画像トークン」へ変換してテキストと一緒に扱えますが、テキスト専用モデルにはその部品がなく、ピクセルを処理できません。「画像を拒否している」のではなく、そもそも画像を受け取る入力経路がないのです。
+
+**2. 画像があっても「受け入れ」で遮断される(harness の層)。** DeepSeek Harness はメッセージを送る前に、現在のモデルの adapter に「対応する入力モダリティは?」と尋ねます。DeepSeek 公式の adapter は**`text` のみをハードコード**しています。そのため画像を貼り付けて送信した瞬間、**画像受け入れ**のゲートで拒否され、画像はモデルに届きません。「モデルは画像を理解できません」という表示は、このゲートが出すもので、モデル自身ではありません。
+
+**3. このプラグインがどう回避するか。** 「(dsh-vision)」ラッパー adapter を登録して `text + image` を宣言し、受け入れを通します。そして実際にリクエストを送る前に、画像を外部ビジョンエンジン(Gemini / OpenAI / Anthropic)へ渡してテキストエビデンスへ変換し、画像をそのテキストへ置き換えます。DeepSeek が受け取るのは依然としてテキストだけですが、そのエビデンスに基づいて回答できるようになります。
+
+**Q: 完全にローカル / オフラインで動きますか?**
+
+現在のバージョンはクラウドのビジョン API のみです。完全オフラインにはローカルビジョンモデルが必要です(今後の方向性として検討可能)。
+
+**Q: 対応画像形式は?**
+
+`png` / `jpeg` / `webp` / `gif`。
 
 ## License
 

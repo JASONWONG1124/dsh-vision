@@ -2,7 +2,24 @@
 
 [中文](README.md) · **English** · [日本語](README.ja.md) · [한국어](README.ko.md)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/JASONWONG1124/dsh-vision?style=social)](https://github.com/JASONWONG1124/dsh-vision/stargazers)
+[![Node](https://img.shields.io/badge/node-%3E%3D22-green.svg)](https://nodejs.org)
+
 Gives [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)'s text-only models the ability to see. **Paste an image and it just works** — no CLI. Fill in one vision-model API key and the plugin calls the vision API directly over HTTP, turning the image into structured evidence (full OCR + semantics + layout + visual) before handing it to the text model.
+
+## Table of Contents
+
+- [Features](#features)
+- [How it works](#how-it-works)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [What the model sees](#what-the-model-sees)
+- [Security](#security)
+- [Troubleshooting](#troubleshooting)
+- [FAQ](#faq)
+- [License](#license)
 
 ## Features
 
@@ -23,9 +40,15 @@ DeepSeek's text model can't take images, so pasting one is rejected at image adm
 
 Data flow (the vision engine is the "eyes"; DeepSeek only reads text):
 
-```
-paste image → read bytes → call vision API (Gemini/OpenAI/Anthropic)
-           → structured evidence JSON → render as text → forward to DeepSeek → answer
+```mermaid
+flowchart LR
+    A[Paste image] --> B[dsh-vision intercepts]
+    B --> C[Read image bytes]
+    C --> D["Vision API<br/>Gemini / OpenAI / Anthropic"]
+    D --> E[Structured evidence JSON]
+    E --> F[Render as text]
+    F --> G[DeepSeek text model]
+    G --> H[Answer]
 ```
 
 > Image pixels never reach DeepSeek; it reads the text evidence the vision engine wrote.
@@ -135,6 +158,34 @@ The vision engine converts the image into structured fields, then renders them a
 | "model … is no longer available" | The model is deprecated; use a current model (e.g. `gemini-3.6-flash`) |
 | `dsh plugin add` says "pnpm not found" | Install pnpm: `npm i -g pnpm` or `corepack enable pnpm` |
 | `declares no dsh.bundle` | Brief publish cooldown; re-run the install command |
+
+## FAQ
+
+**Q: Is my image uploaded to a third party?**
+
+Yes — when reading an image it is sent to the vision provider you chose in settings (Gemini / OpenAI-compatible / Anthropic), and nowhere else.
+
+**Q: Does it cost money?**
+
+Vision APIs are billed per call: Gemini has a free tier (get a key at [Google AI Studio](https://aistudio.google.com)); OpenAI / Anthropic bill by usage. The same image is cached within a session, so it isn't re-billed repeatedly.
+
+**Q: Why can't DeepSeek's text-only model see images?**
+
+There are two layers to this:
+
+**1. The model has no "eyes" (architecture).** Models like DeepSeek-V4-Pro are **text-only** — they accept a sequence of text tokens and produce text. Multimodal models (GPT-4o, Gemini, Claude) add a **vision encoder** that first turns an image into "image tokens" to reason over alongside text; a text-only model simply has no such component, so pixels mean nothing to it. It's not that it "refuses" images — it has no input channel for them at all.
+
+**2. Even with an image, it's blocked at admission (harness layer).** Before sending a message, DeepSeek Harness asks the current model's adapter: "what input modalities do you support?" The official DeepSeek adapter **hardcodes `text` only**. So the moment you paste an image and send, the harness rejects it at the **image-admission** gate — the image never even reaches the model; the "model can't understand images" message comes from this gate, not from the model itself.
+
+**3. How this plugin gets around it.** It registers a "(dsh-vision)" wrapper adapter that declares `text + image` support, so admission passes; then, before the request actually goes out, it hands the image to an external vision engine (Gemini / OpenAI / Anthropic) to turn it into text evidence, and replaces the image with that text. DeepSeek still only receives text — but now it can answer from that evidence.
+
+**Q: Can it run fully locally / offline?**
+
+The current version only calls cloud vision APIs. Fully offline would require a local vision model (a possible future direction).
+
+**Q: Which image formats are supported?**
+
+`png` / `jpeg` / `webp` / `gif`.
 
 ## License
 

@@ -2,7 +2,24 @@
 
 [中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · **한국어**
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/JASONWONG1124/dsh-vision?style=social)](https://github.com/JASONWONG1124/dsh-vision/stargazers)
+[![Node](https://img.shields.io/badge/node-%3E%3D22-green.svg)](https://nodejs.org)
+
 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)의 텍스트 전용 모델에 시각 능력을 더합니다. **이미지를 붙여넣기만 하면 인식**되며 CLI가 필요 없습니다. 시각 모델 API 키 하나만 입력하면 플러그인이 HTTP로 비전 API를 직접 호출해 이미지를 구조화된 근거(OCR 전체 텍스트 + 의미 + 레이아웃 + 시각)로 바꾼 뒤 텍스트 모델에 전달합니다.
+
+## 목차
+
+- [특징](#특징)
+- [작동 원리](#작동-원리)
+- [설치](#설치)
+- [설정](#설정)
+- [사용법](#사용법)
+- [모델이 보는 것](#모델이-보는-것)
+- [보안](#보안)
+- [문제 해결](#문제-해결)
+- [FAQ](#faq)
+- [License](#license)
 
 ## 특징
 
@@ -23,9 +40,15 @@ DeepSeek의 텍스트 모델은 이미지를 받을 수 없어 붙여넣기가 �
 
 데이터 흐름(비전 엔진이 "눈"이고 DeepSeek은 텍스트만 읽음):
 
-```
-이미지 붙여넣기 → 바이트 읽기 → 비전 API 호출(Gemini/OpenAI/Anthropic)
-              → 구조화된 근거 JSON → 텍스트로 변환 → DeepSeek에 전달 → 답변
+```mermaid
+flowchart LR
+    A[이미지 붙여넣기] --> B[dsh-vision이 가로챔]
+    B --> C[이미지 바이트 읽기]
+    C --> D["비전 API<br/>Gemini / OpenAI / Anthropic"]
+    D --> E[구조화된 근거 JSON]
+    E --> F[텍스트로 변환]
+    F --> G[DeepSeek 텍스트 모델]
+    G --> H[답변]
 ```
 
 > 이미지 픽셀은 DeepSeek에 도달하지 않습니다. DeepSeek이 읽는 것은 비전 엔진이 작성한 텍스트 근거입니다.
@@ -135,6 +158,34 @@ export VISION_PROVIDER=gemini     # gemini | openai | anthropic
 | "model … is no longer available" | 모델이 지원 중단됨. 현재 사용 가능한 모델(예 `gemini-3.6-flash`)로 변경 |
 | `dsh plugin add`에서 "pnpm not found" | pnpm 설치:`npm i -g pnpm` 또는 `corepack enable pnpm` |
 | `declares no dsh.bundle` | 게시 직후 짧은 쿨다운. 설치 명령을 다시 실행 |
+
+## FAQ
+
+**Q: 내 이미지가 제3자에게 업로드되나요?**
+
+네 —— 이미지를 읽을 때 설정에서 선택한 비전 공급자(Gemini / OpenAI 호환 / Anthropic)에게 전송되며, 그 외 다른 곳에는 전송되지 않습니다.
+
+**Q: 비용이 드나요?**
+
+비전 API는 호출당 과금됩니다. Gemini는 무료 한도가 있고([Google AI Studio](https://aistudio.google.com)에서 키 발급), OpenAI / Anthropic은 사용량 기준 과금입니다. 같은 이미지는 세션 내에서 캐시되므로 반복해서 과금되지 않습니다.
+
+**Q: 왜 DeepSeek의 텍스트 전용 모델은 이미지를 볼 수 없나요?**
+
+여기에는 두 겹이 있습니다:
+
+**1. 모델 자체에 "눈"이 없습니다(아키텍처).** DeepSeek-V4-Pro 같은 모델은 **텍스트 전용**으로, 텍스트 토큰 시퀀스만 받아 텍스트를 출력합니다. 멀티모달 모델(GPT-4o, Gemini, Claude)은 **비전 인코더**를 갖고 있어 이미지를 먼저 "이미지 토큰"으로 바꿔 텍스트와 함께 다루지만, 텍스트 전용 모델에는 그 부품 자체가 없어 픽셀을 처리할 수 없습니다. 이미지를 "거부"하는 것이 아니라, 이미지를 받을 입력 경로가 처음부터 없는 것입니다.
+
+**2. 이미지가 있어도 "수용" 단계에서 차단됩니다(harness 계층).** DeepSeek Harness는 메시지를 보내기 전에 현재 모델의 adapter에 "어떤 입력 모달리티를 지원하나요?"라고 묻습니다. DeepSeek 공식 adapter는 **`text`만 하드코딩**되어 있습니다. 그래서 이미지를 붙여넣고 보내는 순간 **이미지 수용** 게이트에서 거부되어, 이미지는 모델에 도달하지도 못합니다. "모델이 이미지를 이해할 수 없습니다"라는 메시지는 이 게이트가 내는 것이지 모델 자신이 아닙니다.
+
+**3. 이 플러그인이 어떻게 우회하는가.** "(dsh-vision)" 래퍼 adapter를 등록해 `text + image` 지원을 선언함으로써 수용을 통과시킵니다. 그런 다음 요청이 실제로 나가기 전에 이미지를 외부 비전 엔진(Gemini / OpenAI / Anthropic)에 넘겨 텍스트 근거로 바꾸고, 이미지를 그 텍스트로 교체합니다. DeepSeek이 받는 것은 여전히 텍스트뿐이지만, 이제 그 근거를 바탕으로 답할 수 있습니다.
+
+**Q: 완전히 로컬 / 오프라인으로 실행할 수 있나요?**
+
+현재 버전은 클라우드 비전 API만 호출합니다. 완전 오프라인은 로컬 비전 모델이 필요합니다(향후 방향으로 검토 가능).
+
+**Q: 어떤 이미지 형식을 지원하나요?**
+
+`png` / `jpeg` / `webp` / `gif`.
 
 ## License
 
