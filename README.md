@@ -1,5 +1,7 @@
 # dsh-vision
 
+[English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
+
 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的纯文本模型补上视觉能力。**直接粘贴图片就能识别**,无需任何 CLI —— 填一个视觉模型的 API key,插件直接通过 HTTP 调视觉 API,把图片转成结构化证据(OCR 全文 + 语义 + 版面 + 视觉)再交给文本模型。
 
 ## 特性
@@ -93,11 +95,11 @@ export VISION_PROVIDER=gemini     # gemini | openai | anthropic
 
 ### 支持的服务商
 
-| 服务商 | 默认模型 | 默认地址 | 说明 |
-| :-- | :-- | :-- | :-- |
-| `gemini` | `gemini-3.6-flash` | `https://generativelanguage.googleapis.com` | 免费 key 见 [Google AI Studio](https://aistudio.google.com) |
-| `openai` | 无(需填) | `https://api.openai.com/v1` | 任意 OpenAI 兼容端点:OpenAI、通义 qwen-vl、智谱 GLM、自建网关 |
-| `anthropic` | `claude-sonnet-4-5` | `https://api.anthropic.com` | Anthropic Claude |
+| 服务商 | 默认地址 | 说明 |
+| :-- | :-- | :-- |
+| `gemini` | `https://generativelanguage.googleapis.com` | 免费 key 见 [Google AI Studio](https://aistudio.google.com) |
+| `openai` | `https://api.openai.com/v1` | 任意 OpenAI 兼容端点:OpenAI、通义 qwen-vl、智谱 GLM、自建网关 |
+| `anthropic` | `https://api.anthropic.com` | Anthropic Claude |
 
 > **服务商选择的作用**:`provider` 决定「看图」时实际调用哪一家的视觉 API(用哪把 key + 哪个模型)。三家的 key/模型/地址是**各自独立保存**的,切换 `provider` 只切换「当前生效的那一个」,不会清掉其它两家的配置。
 
