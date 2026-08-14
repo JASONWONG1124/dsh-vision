@@ -2,7 +2,24 @@
 
 **中文** · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/JASONWONG1124/dsh-vision?style=social)](https://github.com/JASONWONG1124/dsh-vision/stargazers)
+[![Node](https://img.shields.io/badge/node-%3E%3D22-green.svg)](https://nodejs.org)
+
 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的纯文本模型补上视觉能力。**直接粘贴图片就能识别**,无需任何 CLI —— 填一个视觉模型的 API key,插件直接通过 HTTP 调视觉 API,把图片转成结构化证据(OCR 全文 + 语义 + 版面 + 视觉)再交给文本模型。
+
+## 目录
+
+- [特性](#特性)
+- [原理](#原理)
+- [安装](#安装)
+- [配置](#配置)
+- [使用](#使用)
+- [模型看到的证据](#模型看到的证据)
+- [安全](#安全)
+- [故障排查](#故障排查)
+- [FAQ](#faq)
+- [License](#license)
 
 ## 特性
 
@@ -23,9 +40,15 @@ DeepSeek 的文本模型不吃图片,粘贴图片会在「图片准入」阶段�
 
 数据链路(模型的"眼睛"是视觉引擎,DeepSeek 只读到文字):
 
-```
-粘贴图片 → 读出字节 → 调视觉 API(Gemini/OpenAI/Anthropic)
-        → 结构化证据 JSON → 渲染成文字 → 转发给 DeepSeek → 回答
+```mermaid
+flowchart LR
+    A[粘贴图片] --> B[dsh-vision 拦截]
+    B --> C[读出图片字节]
+    C --> D["视觉 API<br/>Gemini / OpenAI / Anthropic"]
+    D --> E[结构化证据 JSON]
+    E --> F[渲染成文字]
+    F --> G[DeepSeek 文本模型]
+    G --> H[回答]
 ```
 
 > 图片像素**永远到不了** DeepSeek;它读到的是视觉引擎写出的文字证据。
@@ -135,6 +158,28 @@ export VISION_PROVIDER=gemini     # gemini | openai | anthropic
 | 报「model … is no longer available」 | 模型已停用,换一个当前可用的模型(如 `gemini-3.6-flash`) |
 | `dsh plugin add` 报「pnpm not found」 | 安装 pnpm:`npm i -g pnpm` 或 `corepack enable pnpm` |
 | 报 `declares no dsh.bundle` | 刚发布的包有短暂冷静期,重跑一次安装命令即可 |
+
+## FAQ
+
+**Q:我的图片会被上传到第三方吗?**
+
+会 —— 识别时图片会发给你在设置里选定的视觉服务商(Gemini / OpenAI 兼容 / Anthropic)。除此之外不会发给任何其它方。
+
+**Q:会不会花钱?**
+
+视觉 API 按调用计费:Gemini 有免费额度([Google AI Studio](https://aistudio.google.com) 领取),OpenAI / Anthropic 按量付费。同一张图在会话内有缓存,不会反复重复计费。
+
+**Q:为什么 DeepSeek 的纯文本模型看不了图?**
+
+它不接受图像输入,所以粘贴会在「图片准入」阶段被拒。本插件用外挂视觉引擎先把图转成文字,再喂给文本模型。
+
+**Q:能完全本地 / 离线跑吗?**
+
+当前版本只接云视觉 API。要做到完全离线,需要另接本地视觉模型(可作为后续方向)。
+
+**Q:支持哪些图片格式?**
+
+`png` / `jpeg` / `webp` / `gif`。
 
 ## License
 
