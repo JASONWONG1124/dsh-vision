@@ -1,6 +1,6 @@
 # dsh-vision
 
-[中文](README.md) · [English](README.en.md) · [日本語](README.ja.md)
+[中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · **한국어**
 
 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)의 텍스트 전용 모델에 시각 능력을 더합니다. **이미지를 붙여넣기만 하면 인식**되며 CLI가 필요 없습니다. 시각 모델 API 키 하나만 입력하면 플러그인이 HTTP로 비전 API를 직접 호출해 이미지를 구조화된 근거(OCR 전체 텍스트 + 의미 + 레이아웃 + 시각)로 바꾼 뒤 텍스트 모델에 전달합니다.
 

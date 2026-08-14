@@ -1,6 +1,6 @@
 # dsh-vision
 
-[中文](README.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
+[中文](README.md) · **English** · [日本語](README.ja.md) · [한국어](README.ko.md)
 
 Gives [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)'s text-only models the ability to see. **Paste an image and it just works** — no CLI. Fill in one vision-model API key and the plugin calls the vision API directly over HTTP, turning the image into structured evidence (full OCR + semantics + layout + visual) before handing it to the text model.
 

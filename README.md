@@ -1,6 +1,6 @@
 # dsh-vision
 
-[English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
+**中文** · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的纯文本模型补上视觉能力。**直接粘贴图片就能识别**,无需任何 CLI —— 填一个视觉模型的 API key,插件直接通过 HTTP 调视觉 API,把图片转成结构化证据(OCR 全文 + 语义 + 版面 + 视觉)再交给文本模型。
 
