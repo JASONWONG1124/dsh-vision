@@ -1,0 +1,51 @@
+{
+  "name": "dsh-vision",
+  "version": "0.1.0",
+  "description": "Plug-in vision for DeepSeek Harness text-only models: paste an image, it is converted to structured evidence (OCR + semantics) before the text model sees it. No CLI — you fill one API key and the plugin calls the vision model over HTTP directly.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JASONWONG1124/dsh-vision.git"
+  },
+  "author": "JASON-WONG",
+  "homepage": "https://github.com/JASONWONG1124/dsh-vision#readme",
+  "bugs": {
+    "url": "https://github.com/JASONWONG1124/dsh-vision/issues"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "vision",
+    "ocr",
+    "multimodal",
+    "image-to-text",
+    "gemini",
+    "openai"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "files": [
+    "dsh",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": "./dsh/index.js",
+    "./dsh": "./dsh/index.js",
+    "./client": "./dsh/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [],
+      "platform": "web",
+      "immediately": true
+    }
+  }
+}

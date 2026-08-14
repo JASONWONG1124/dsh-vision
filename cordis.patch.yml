@@ -1,0 +1,6 @@
+# dsh-vision bundle layer: mount the vision plugin (dsh/index.js via the package
+# root export). The row id/name is the package name; config is optional and the
+# plugin ships safe defaults.
+- insert:
+    - id: dsh-vision
+      name: dsh-vision
